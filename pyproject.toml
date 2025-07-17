@@ -1,0 +1,10 @@
+[project]
+name = "sonarr-lang-checker"
+version = "0.1.0"
+description = "Controlla le discrepanze linguistiche tra episodi e stagioni in Sonarr"
+requires-python = ">=3.8"
+
+dependencies = [
+    "requests",
+    "python-dotenv"
+]

@@ -1,0 +1,13 @@
+__pycache__/
+.DS_Store
+.env
+.venv/
+*.csv
+*.json
+*.log
+*.log
+*.pyc
+*.pyd
+*.pyo
+*.xlsx
+*repomix*
