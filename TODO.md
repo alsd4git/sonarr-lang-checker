@@ -1,5 +1,7 @@
 # 📝 TODO - sonarr-lang-checker
 
+Italiano · [English](TODO.en.md)
+
 Elenco dei prossimi miglioramenti e idee future per il progetto.
 
 ---
