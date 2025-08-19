@@ -8,7 +8,9 @@ Elenco dei prossimi miglioramenti e idee future per il progetto.
 
 ## 🔧 Funzionalità
 
-- [ ] Normalizzazione delle stringhe `audioLanguages` (es. `ita/eng` == `eng/ita`)
+- [x] Normalizzazione delle stringhe `audioLanguages` (es. `ita/eng` == `eng/ita`)
+- [x] Flag `--ignore-unknown` per escludere `und` dal calcolo dei mismatch
+- [x] Flag `--timeout` per impostare il timeout di lettura HTTP
 - [ ] Supporto per esportazione CSV / Excel
 - [ ] Aggiunta logging su file (es. `log/scan.log`)
 - [ ] Opzione `--filter` per visualizzare solo stagioni miste

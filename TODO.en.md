@@ -8,7 +8,9 @@ List of upcoming improvements and future ideas for the project.
 
 ## 🔧 Features
 
-- [ ] Normalize `audioLanguages` strings (e.g., `ita/eng` == `eng/ita`)
+- [x] Normalize `audioLanguages` strings (e.g., `ita/eng` == `eng/ita`)
+- [x] `--ignore-unknown` flag to exclude `und` from mismatch decisions
+- [x] `--timeout` flag to control HTTP read timeout
 - [ ] CSV / Excel export support
 - [ ] File logging (e.g., `log/scan.log`)
 - [ ] `--filter` option to show only mixed seasons
@@ -47,4 +49,3 @@ List of upcoming improvements and future ideas for the project.
 - [ ] Radarr integration for movies
 - [ ] Offline‑generated HTML report
 - [ ] Multi‑profile Sonarr support via YAML config
-

@@ -12,6 +12,7 @@ Controlla se ci sono **discrepanze linguistiche** tra gli episodi nelle stagioni
 - 🎧 Rileva episodi o stagioni con lingue miste (es. metà in italiano, metà in inglese)
 - 📦 Output in formato testuale o JSON
 - 🧰 Compatibile con `uv` per gestione ambienti veloce e isolata
+- 🧩 Normalizza le lingue audio: ordine indipendente e sinonimi comuni unificati (es. `en→eng`, `fra/fre→fra`, `unknown/undetermined→und`)
 
 > ❗ Compatibile solo con **Sonarr v4** (`/api/v3`). Non supporta Sonarr v3 o inferiore.
 
@@ -48,6 +49,8 @@ uv run ./main.py --apikey <API_KEY> --url <https://host> [opzioni]
 | `--output`       | Salva l’output su un file `.json`                                           |
 | `--json`         | Mostra l’output direttamente in formato JSON su stdout                      |
 | `--show-all`     | Mostra anche stagioni monolingua, non solo quelle con lingue miste          |
+| `--ignore-unknown` | Ignora `und` (unknown/undetermined) nel calcolo stagione/serie mista       |
+| `--timeout`      | Timeout HTTP di lettura in secondi (connessione fissa a 3s)                 |
 | `-h, --help`     | Mostra l’aiuto e tutti i parametri disponibili                              |
 
 ---

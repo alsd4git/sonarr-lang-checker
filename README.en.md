@@ -12,6 +12,7 @@ Check for **audio language discrepancies** across episodes within a season, or a
 - 🎧 Detects episodes or seasons with mixed audio languages (e.g., half Italian, half English)
 - 📦 Outputs either human‑readable text or JSON
 - 🧰 Works smoothly with `uv` for fast, isolated Python environments
+- 🧩 Normalizes audio languages: order‑insensitive and common synonyms unified (e.g., `en→eng`, `fra/fre→fra`, `unknown/undetermined→und`)
 
 > ❗ Compatible only with **Sonarr v4** (`/api/v3`). Sonarr v3 or lower is not supported.
 
@@ -48,6 +49,8 @@ uv run ./main.py --apikey <API_KEY> --url <https://host> [options]
 | `--output`       | Save output to a `.json` file                                               |
 | `--json`         | Print output as JSON to stdout                                              |
 | `--show-all`     | Show monolingual seasons as well, not only mixed‑language ones              |
+| `--ignore-unknown` | Ignore `und` (unknown/undetermined) when deciding mixed/monolingual        |
+| `--timeout`      | HTTP read timeout in seconds (connect timeout fixed at 3s)                  |
 | `-h, --help`     | Show help and all available parameters                                      |
 
 ---
