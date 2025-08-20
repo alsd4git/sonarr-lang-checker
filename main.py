@@ -29,6 +29,9 @@ def parse_args():
     parser.add_argument('--show-all', action='store_true', help='Mostra anche stagioni monolingua')
     parser.add_argument('--ignore-unknown', action='store_true', help='Ignora "und/unknown" nel calcolo dei mismatch')
     parser.add_argument('--timeout', type=float, help='Timeout HTTP in secondi (solo lettura). Connessione fissa a 3s')
+    parser.add_argument('--wanted-langs', dest='wanted_langs', help='Lista di lingue desiderate separate da virgola (es: ita,eng)')
+    parser.add_argument('--wanted-lang', dest='wanted_langs', help='Alias di --wanted-langs')
+    parser.add_argument('--ignore-anime', action='store_true', help='Ignora le serie con tipo "Anime"')
     return parser.parse_args()
 
 
@@ -93,6 +96,24 @@ def normalize_audio_languages(value: str) -> str:
     return "/".join(unique)
 
 
+def parse_wanted_langs(csv: str) -> List[str]:
+    if not csv:
+        return []
+    items = []
+    for part in csv.split(','):
+        token = normalize_audio_languages(part)
+        # normalize_audio_languages may return combined values if input had '/'
+        items.extend([t for t in token.split('/') if t])
+    # deduplicate while preserving order
+    seen = set()
+    result = []
+    for t in items:
+        if t not in seen:
+            seen.add(t)
+            result.append(t)
+    return result
+
+
 def analyze_language_distribution(series, episodes, files_by_id):
     lang_summary = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
     for ep in episodes:
@@ -105,6 +126,56 @@ def analyze_language_distribution(series, episodes, files_by_id):
         season = ep["seasonNumber"]
         lang_summary[series["title"]][season][lang] += 1
     return lang_summary
+
+
+def detect_wanted_coverage(lang_summary, wanted: List[str], include_all=False, ignore_unknown=False):
+    issues = []
+    if not wanted:
+        return issues
+    wanted_set = set(wanted)
+    for serie, seasons in lang_summary.items():
+        for season_num, langs in seasons.items():
+            # Optionally drop unknowns from consideration
+            if ignore_unknown:
+                langs = {k: v for k, v in langs.items() if k != 'und'}
+            total = sum(langs.values())
+            supported = 0
+            for combo, count in langs.items():
+                tokens = combo.split('/')
+                if any(t in wanted_set for t in tokens):
+                    supported += count
+            if total == 0:
+                # nothing to evaluate after ignoring unknowns
+                continue
+            if supported == 0:
+                issues.append({
+                    "type": "stagione_non_supportata",
+                    "serie": serie,
+                    "stagione": season_num,
+                    "totale": total,
+                    "supportati": supported,
+                    "lingue_desiderate": list(wanted_set)
+                })
+            elif supported == total:
+                if include_all:
+                    issues.append({
+                        "type": "stagione_supportata",
+                        "serie": serie,
+                        "stagione": season_num,
+                        "totale": total,
+                        "supportati": supported,
+                        "lingue_desiderate": list(wanted_set)
+                    })
+            else:
+                issues.append({
+                    "type": "stagione_parzialmente_supportata",
+                    "serie": serie,
+                    "stagione": season_num,
+                    "totale": total,
+                    "supportati": supported,
+                    "lingue_desiderate": list(wanted_set)
+                })
+    return issues
 
 
 def detect_mismatches(lang_summary, include_all=False, ignore_unknown=False):
@@ -179,6 +250,8 @@ def main():
     all_lang_data = {}
 
     for serie in series_list:
+        if args.ignore_anime and str(serie.get('seriesType', '')).lower() == 'anime':
+            continue
         try:
             episodes = get_episodes(session, serie["id"], base_url, timeout)
             serie_files = get_episode_files(session, serie["id"], base_url, timeout)
@@ -187,7 +260,11 @@ def main():
         except requests.RequestException as e:
             print(f"⚠️ Errore durante l'elaborazione della serie '{serie['title']}': {e}")
 
-    results = detect_mismatches(all_lang_data, include_all=args.show_all, ignore_unknown=args.ignore_unknown)
+    wanted_list = parse_wanted_langs(args.wanted_langs) if args.wanted_langs else []
+    if wanted_list:
+        results = detect_wanted_coverage(all_lang_data, wanted_list, include_all=args.show_all, ignore_unknown=args.ignore_unknown)
+    else:
+        results = detect_mismatches(all_lang_data, include_all=args.show_all, ignore_unknown=args.ignore_unknown)
 
     if args.output:
         with open(args.output, 'w', encoding='utf-8') as f:
@@ -229,6 +306,22 @@ def main():
                 elif item["type"] == "serie_ok":
                     langs = ', '.join(f"{get_flag(k)} {k}" for k in item['lingue'])
                     print(f"  [{label}]".ljust(pad) + f" {item['serie']}: Lingua unica: [{langs}]")
+                elif item["type"] in ("stagione_non_supportata", "stagione_parzialmente_supportata", "stagione_supportata"):
+                    if item["type"] == "stagione_non_supportata":
+                        label = "🚫 NESSUNA LINGUA DESIDERATA"
+                        pad = PADDING_WIDTH - 1
+                    elif item["type"] == "stagione_parzialmente_supportata":
+                        label = "🟡 PARZIALMENTE SUPPORTATA"
+                        pad = PADDING_WIDTH
+                    elif item["type"] == "stagione_supportata":
+                        label = "✅ STAGIONE OK (desiderata)"
+                        pad = PADDING_WIDTH - 2
+                    wanted_disp = ', '.join(f"{get_flag(k)} {k}" for k in item['lingue_desiderate'])
+                    print(
+                        f"  [{label}]".ljust(pad)
+                        + f" {item['serie']} - Stagione {item['stagione']}: "
+                        + f"{item['supportati']}/{item['totale']} episodi con lingue desiderate [{wanted_disp}]"
+                    )
         else:
             print("    ✅ Nessuna discrepanza linguistica rilevata.")
 
