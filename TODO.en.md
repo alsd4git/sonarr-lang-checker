@@ -17,6 +17,9 @@ List of upcoming improvements and future ideas for the project.
 - [ ] Colored / highlighted CLI output
 - [ ] Flag to include only complete series
 - [ ] Sort output by severity / number of mismatches
+ - [x] Desired language coverage report (`--wanted-langs`)
+ - [x] Alias `--wanted-lang`
+ - [x] Ignore Anime series (`--ignore-anime`)
 
 ---
 

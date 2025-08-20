@@ -13,6 +13,7 @@ Controlla se ci sono **discrepanze linguistiche** tra gli episodi nelle stagioni
 - 📦 Output in formato testuale o JSON
 - 🧰 Compatibile con `uv` per gestione ambienti veloce e isolata
 - 🧩 Normalizza le lingue audio: ordine indipendente e sinonimi comuni unificati (es. `en→eng`, `fra/fre→fra`, `unknown/undetermined→und`)
+- 🎯 Copertura lingue desiderate: segnala stagioni senza o con supporto parziale delle lingue preferite
 
 > ❗ Compatibile solo con **Sonarr v4** (`/api/v3`). Non supporta Sonarr v3 o inferiore.
 
@@ -49,8 +50,11 @@ uv run ./main.py --apikey <API_KEY> --url <https://host> [opzioni]
 | `--output`       | Salva l’output su un file `.json`                                           |
 | `--json`         | Mostra l’output direttamente in formato JSON su stdout                      |
 | `--show-all`     | Mostra anche stagioni monolingua, non solo quelle con lingue miste          |
-| `--ignore-unknown` | Ignora `und` (unknown/undetermined) nel calcolo stagione/serie mista       |
+| `--ignore-unknown` | Ignora `und` (unknown/undetermined) nel calcolo stagione/serie mista e in wanted |
 | `--timeout`      | Timeout HTTP di lettura in secondi (connessione fissa a 3s)                 |
+| `--wanted-langs` | Lingue desiderate separate da virgola (es: `ita,eng`)                       |
+| `--wanted-lang`  | Alias di `--wanted-langs`                                                   |
+| `--ignore-anime` | Ignora le serie con tipo "Anime"                                           |
 | `-h, --help`     | Mostra l’aiuto e tutti i parametri disponibili                              |
 
 ---
@@ -73,6 +77,18 @@ Output salvato su file:
 
 ```bash
 uv run ./main.py --apikey abc123 --url https://sonarr.example.org --output risultati.json
+```
+
+Lingue desiderate (lista stagioni assenti/parziali):
+
+```bash
+uv run ./main.py --apikey abc123 --url https://sonarr.example.org --wanted-langs ita,eng
+```
+
+Mostra anche stagioni completamente supportate (100% episodi):
+
+```bash
+uv run ./main.py --apikey abc123 --url https://sonarr.example.org --wanted-langs ita --show-all
 ```
 
 ---
