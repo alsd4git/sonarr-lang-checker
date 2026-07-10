@@ -17,9 +17,9 @@ Elenco dei prossimi miglioramenti e idee future per il progetto.
 - [ ] Output con colori / evidenziazione CLI
 - [ ] Flag per includere solo serie complete
 - [ ] Ordinamento output per gravità / numero di mismatch
- - [x] Report copertura lingue desiderate (`--wanted-langs`)
- - [x] Alias `--wanted-lang`
- - [x] Ignora serie Anime (`--ignore-anime`)
+- [x] Report copertura lingue desiderate (`--wanted-langs`)
+- [x] Alias `--wanted-lang`
+- [x] Ignora serie Anime (`--ignore-anime`)
 
 ---
 
