@@ -14,6 +14,8 @@ Controlla se ci sono **discrepanze linguistiche** tra gli episodi nelle stagioni
 - 🧰 Compatibile con `uv` per gestione ambienti veloce e isolata
 - 🧩 Normalizza le lingue audio: ordine indipendente e sinonimi comuni unificati (es. `en→eng`, `fra/fre→fra`, `unknown/undetermined→und`)
 - 🎯 Copertura lingue desiderate: segnala stagioni senza o con supporto parziale delle lingue preferite
+- ⚡ Recupero concorrente con un limite configurabile per non sovraccaricare Sonarr
+- 🧭 Exit code espliciti: `0` analisi completa, `1` errore fatale, `2` risultati parziali
 
 > ❗ Compatibile solo con **Sonarr v4** (`/api/v3`). Non supporta Sonarr v3 o inferiore.
 
@@ -55,6 +57,7 @@ uv run ./main.py --apikey <API_KEY> --url <https://host> [opzioni]
 | `--wanted-langs` | Lingue desiderate separate da virgola (es: `ita,eng`)                       |
 | `--wanted-lang`  | Alias di `--wanted-langs`                                                   |
 | `--ignore-anime` | Ignora le serie con tipo "Anime"                                           |
+| `--workers`      | Richieste concorrenti massime verso Sonarr (default `4`, massimo `16`)      |
 | `-h, --help`     | Mostra l’aiuto e tutti i parametri disponibili                              |
 
 ---
@@ -90,6 +93,16 @@ Mostra anche stagioni completamente supportate (100% episodi):
 ```bash
 uv run ./main.py --apikey abc123 --url https://sonarr.example.org --wanted-langs ita --show-all
 ```
+
+Su installazioni Sonarr con risorse limitate puoi ridurre il parallelismo:
+
+```bash
+uv run ./main.py --apikey abc123 --url https://sonarr.example.org --workers 2
+```
+
+Se una o più serie non possono essere recuperate, i risultati disponibili vengono
+comunque prodotti, il riepilogo degli errori viene scritto su stderr e il processo
+termina con exit code `2`.
 
 ---
 

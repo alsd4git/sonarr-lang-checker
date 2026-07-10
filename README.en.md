@@ -14,6 +14,8 @@ Check for **audio language discrepancies** across episodes within a season, or a
 - 🧰 Works smoothly with `uv` for fast, isolated Python environments
 - 🧩 Normalizes audio languages: order‑insensitive and common synonyms unified (e.g., `en→eng`, `fra/fre→fra`, `unknown/undetermined→und`)
 - 🎯 Wanted languages coverage: report seasons missing or partially supporting your desired languages
+- ⚡ Concurrent fetching with a configurable limit to avoid overloading Sonarr
+- 🧭 Explicit exit codes: `0` complete analysis, `1` fatal error, `2` partial results
 
 > ❗ Compatible only with **Sonarr v4** (`/api/v3`). Sonarr v3 or lower is not supported.
 
@@ -55,6 +57,7 @@ uv run ./main.py --apikey <API_KEY> --url <https://host> [options]
 | `--wanted-langs` | Comma‑separated desired languages (e.g., `ita,eng`)                         |
 | `--wanted-lang`  | Alias of `--wanted-langs`                                                   |
 | `--ignore-anime` | Skip series with type "Anime"                                              |
+| `--workers`      | Maximum concurrent requests to Sonarr (default `4`, maximum `16`)           |
 | `-h, --help`     | Show help and all available parameters                                      |
 
 ---
@@ -90,6 +93,15 @@ Show also fully supported seasons (100% episodes match wanted):
 ```bash
 uv run ./main.py --apikey abc123 --url https://sonarr.example.org --wanted-langs ita --show-all
 ```
+
+On resource-constrained Sonarr installations, reduce concurrency:
+
+```bash
+uv run ./main.py --apikey abc123 --url https://sonarr.example.org --workers 2
+```
+
+If one or more series cannot be fetched, available results are still produced, an
+error summary is written to stderr, and the process exits with code `2`.
 
 ---
 
