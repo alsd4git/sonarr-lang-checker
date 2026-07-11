@@ -51,6 +51,7 @@ uv run ./main.py --apikey <API_KEY> --url <https://host> [opzioni]
 | `--url`          | **(obbligatorio)** URL base Sonarr v4 (es: https://sonarr.example.org)      |
 | `--output`       | Salva l’output su un file `.json`                                           |
 | `--json`         | Mostra l’output direttamente in formato JSON su stdout                      |
+| `--structured-json` | Include i metadata `{results, failures, complete}` su stdout o `--output` |
 | `--show-all`     | Mostra anche stagioni monolingua, non solo quelle con lingue miste          |
 | `--ignore-unknown` | Ignora `und` (unknown/undetermined) nel calcolo stagione/serie mista e in wanted |
 | `--timeout`      | Timeout HTTP di lettura in secondi (connessione fissa a 3s)                 |
@@ -80,6 +81,12 @@ Output salvato su file:
 
 ```bash
 uv run ./main.py --apikey abc123 --url https://sonarr.example.org --output risultati.json
+```
+
+Per includere i metadata delle analisi parziali senza cambiare il vecchio formato JSON:
+
+```bash
+uv run ./main.py --apikey abc123 --url https://sonarr.example.org --structured-json --output report.json
 ```
 
 Lingue desiderate (lista stagioni assenti/parziali):

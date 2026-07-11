@@ -1,6 +1,10 @@
 import argparse
 import json
+import math
+import os
+import stat
 import sys
+import tempfile
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from os import getenv
@@ -35,6 +39,13 @@ def positive_worker_count(value: str) -> int:
     return workers
 
 
+def positive_timeout(value: str) -> float:
+    timeout = float(value)
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise argparse.ArgumentTypeError("deve essere un numero positivo")
+    return timeout
+
+
 def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Controlla le discrepanze linguistiche nelle stagioni/serie presenti in Sonarr (compatibile solo con Sonarr v4)."
@@ -43,9 +54,18 @@ def parse_args(argv=None):
     parser.add_argument('--url', default=getenv("SONARR_URL"), help='URL base di Sonarr (può anche essere in .env)')
     parser.add_argument('--output', help='Percorso file su cui salvare l’output')
     parser.add_argument('--json', action='store_true', help='Mostra output in formato JSON')
+    parser.add_argument(
+        '--structured-json',
+        action='store_true',
+        help='Include results, failures e complete nell’output JSON',
+    )
     parser.add_argument('--show-all', action='store_true', help='Mostra anche stagioni monolingua')
     parser.add_argument('--ignore-unknown', action='store_true', help='Ignora "und/unknown" nel calcolo dei mismatch')
-    parser.add_argument('--timeout', type=float, help='Timeout HTTP in secondi (solo lettura). Connessione fissa a 3s')
+    parser.add_argument(
+        '--timeout',
+        type=positive_timeout,
+        help='Timeout HTTP positivo in secondi (solo lettura). Connessione fissa a 3s',
+    )
     parser.add_argument('--wanted-langs', dest='wanted_langs', help='Lista di lingue desiderate separate da virgola (es: ita,eng)')
     parser.add_argument('--wanted-lang', dest='wanted_langs', help='Alias di --wanted-langs')
     parser.add_argument('--ignore-anime', action='store_true', help='Ignora le serie con tipo "Anime"')
@@ -76,13 +96,113 @@ def get_series(session: requests.Session, base_url: str, timeout: Tuple[float, f
 def get_episodes(session: requests.Session, series_id: int, base_url: str, timeout: Tuple[float, float]):
     res = session.get(f'{base_url}/episode?seriesId={series_id}', timeout=timeout)
     res.raise_for_status()
-    return res.json()
+    episodes = res.json()
+    if not isinstance(episodes, list):
+        raise ValueError(
+            f"Sonarr /episode returned an invalid payload for series {series_id}: expected a list"
+        )
+    for index, episode in enumerate(episodes):
+        if not isinstance(episode, dict):
+            raise ValueError(
+                f"Sonarr /episode returned an invalid item for series {series_id} "
+                f"at index {index}: expected an object"
+            )
+        # Episodes without a downloaded file may legitimately omit
+        # episodeFileId; analyze_language_distribution already skips them.
+        missing = {"seasonNumber"} - episode.keys()
+        if missing:
+            fields = ", ".join(sorted(missing))
+            raise ValueError(
+                f"Sonarr /episode returned an invalid item for series {series_id} "
+                f"at index {index}: missing {fields}"
+            )
+        episode_file_id = episode.get("episodeFileId")
+        try:
+            hash(episode_file_id)
+        except TypeError as error:
+            raise ValueError(
+                f"Sonarr /episode returned an invalid item for series {series_id} "
+                f"at index {index}: episodeFileId must be a scalar value"
+            ) from error
+    return episodes
 
 def get_episode_files(session: requests.Session, series_id: int, base_url: str, timeout: Tuple[float, float]):
     res = session.get(f'{base_url}/episodefile?seriesId={series_id}', timeout=timeout)
     res.raise_for_status()
     files = res.json()
-    return {file["id"]: file for file in files}
+    if not isinstance(files, list):
+        raise ValueError(
+            f"Sonarr /episodefile returned an invalid payload for series {series_id}: expected a list"
+        )
+    normalized_files = []
+    for index, episode_file in enumerate(files):
+        if not isinstance(episode_file, dict):
+            raise ValueError(
+                f"Sonarr /episodefile returned an invalid item for series {series_id} "
+                f"at index {index}: expected an object"
+            )
+        if "id" not in episode_file:
+            raise ValueError(
+                f"Sonarr /episodefile returned an invalid item for series {series_id} "
+                f"at index {index}: missing id"
+            )
+        try:
+            hash(episode_file["id"])
+        except TypeError as error:
+            raise ValueError(
+                f"Sonarr /episodefile returned an invalid item for series {series_id} "
+                f"at index {index}: id must be a scalar value"
+            ) from error
+        media_info = episode_file.get("mediaInfo")
+        if media_info is not None and not isinstance(media_info, dict):
+            raise ValueError(
+                f"Sonarr /episodefile returned an invalid item for series {series_id} "
+                f"at index {index}: mediaInfo must be an object"
+            )
+        if media_info is None:
+            episode_file = {**episode_file, "mediaInfo": {}}
+        normalized_files.append(episode_file)
+    return {file["id"]: file for file in normalized_files}
+
+
+def fsync_directory(directory):
+    """Best-effort directory sync after an atomic replacement."""
+    flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0)
+    try:
+        directory_descriptor = os.open(directory, flags)
+    except OSError:
+        return
+    try:
+        os.fsync(directory_descriptor)
+    except OSError:
+        # Some platforms allow opening directories but not syncing them.
+        pass
+    finally:
+        os.close(directory_descriptor)
+
+
+def write_json_atomic(data, filename):
+    """Replace a JSON output only after its complete contents reach disk."""
+    path = Path(filename)
+    existing_mode = stat.S_IMODE(path.stat().st_mode) if path.exists() else None
+    file_descriptor, temporary_name = tempfile.mkstemp(
+        dir=path.parent,
+        prefix=f".{path.name}.",
+        suffix=".tmp",
+    )
+    temporary_path = Path(temporary_name)
+    try:
+        with os.fdopen(file_descriptor, "w", encoding="utf-8") as output_file:
+            if existing_mode is not None:
+                os.fchmod(output_file.fileno(), existing_mode)
+            json.dump(data, output_file, indent=2, ensure_ascii=False)
+            output_file.write("\n")
+            output_file.flush()
+            os.fsync(output_file.fileno())
+        temporary_path.replace(path)
+        fsync_directory(path.parent)
+    finally:
+        temporary_path.unlink(missing_ok=True)
 
 
 def build_session(apikey: str) -> requests.Session:
@@ -350,7 +470,7 @@ def main(argv=None) -> int:
     session = build_session(args.apikey)
     timeout = (
         DEFAULT_CONNECT_TIMEOUT,
-        args.timeout if args.timeout and args.timeout > 0 else DEFAULT_READ_TIMEOUT,
+        args.timeout if args.timeout is not None else DEFAULT_READ_TIMEOUT,
     )
     base_url = normalize_url(args.url)
 
@@ -392,12 +512,17 @@ def main(argv=None) -> int:
     else:
         results = detect_mismatches(all_lang_data, include_all=args.show_all, ignore_unknown=args.ignore_unknown)
 
+    json_output = (
+        {"results": results, "failures": failures, "complete": not failures}
+        if args.structured_json
+        else results
+    )
+
     if args.output:
-        with open(args.output, 'w', encoding='utf-8') as f:
-            json.dump(results, f, indent=2, ensure_ascii=False)
+        write_json_atomic(json_output, args.output)
         print(f"💾 Risultati salvati in: {args.output}")
-    elif args.json:
-        print(json.dumps(results, indent=2, ensure_ascii=False))
+    elif args.json or args.structured_json:
+        print(json.dumps(json_output, indent=2, ensure_ascii=False))
     else:
         print("\n📊 Risultati:")
         if results:

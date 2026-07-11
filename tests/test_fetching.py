@@ -3,7 +3,13 @@ import time
 import pytest
 import requests
 
-from main import fetch_all_series_language_data, get_series, positive_worker_count
+from main import (
+    fetch_all_series_language_data,
+    get_episode_files,
+    get_episodes,
+    get_series,
+    positive_worker_count,
+)
 
 
 class FakeResponse:
@@ -110,6 +116,111 @@ def test_get_series_rejects_invalid_payload():
     with pytest.raises(ValueError, match="invalid payload"):
         get_series(
             InvalidSeriesSession(),
+            "https://sonarr.example.org/api/v3",
+            (3.0, 20.0),
+        )
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ({"records": []}, "expected a list"),
+        (["not-an-object"], "index 0: expected an object"),
+        ([{"episodeFileId": 1}], "missing seasonNumber"),
+    ],
+)
+def test_get_episodes_rejects_payload_drift(payload, message):
+    class InvalidEpisodeSession:
+        def get(self, _url, timeout):
+            assert timeout == (3.0, 20.0)
+            return FakeResponse(payload)
+
+    with pytest.raises(ValueError, match=message):
+        get_episodes(
+            InvalidEpisodeSession(),
+            42,
+            "https://sonarr.example.org/api/v3",
+            (3.0, 20.0),
+        )
+
+
+def test_get_episodes_accepts_episode_without_downloaded_file():
+    class EpisodeWithoutFileSession:
+        def get(self, _url, timeout):
+            assert timeout == (3.0, 20.0)
+            return FakeResponse([{"seasonNumber": 1}])
+
+    assert get_episodes(
+        EpisodeWithoutFileSession(),
+        42,
+        "https://sonarr.example.org/api/v3",
+        (3.0, 20.0),
+    ) == [{"seasonNumber": 1}]
+
+
+def test_get_episodes_rejects_non_hashable_episode_file_id():
+    class InvalidEpisodeSession:
+        def get(self, _url, timeout):
+            assert timeout == (3.0, 20.0)
+            return FakeResponse([{"seasonNumber": 1, "episodeFileId": [101]}])
+
+    with pytest.raises(ValueError, match="episodeFileId must be a scalar value"):
+        get_episodes(
+            InvalidEpisodeSession(),
+            42,
+            "https://sonarr.example.org/api/v3",
+            (3.0, 20.0),
+        )
+
+
+@pytest.mark.parametrize(
+    ("payload", "message"),
+    [
+        ({"records": []}, "expected a list"),
+        (["not-an-object"], "index 0: expected an object"),
+        ([{"mediaInfo": {}}], "missing id"),
+        ([{"id": 1, "mediaInfo": []}], "mediaInfo must be an object"),
+    ],
+)
+def test_get_episode_files_rejects_payload_drift(payload, message):
+    class InvalidEpisodeFileSession:
+        def get(self, _url, timeout):
+            assert timeout == (3.0, 20.0)
+            return FakeResponse(payload)
+
+    with pytest.raises(ValueError, match=message):
+        get_episode_files(
+            InvalidEpisodeFileSession(),
+            42,
+            "https://sonarr.example.org/api/v3",
+            (3.0, 20.0),
+        )
+
+
+def test_get_episode_files_normalizes_null_media_info():
+    class NullMediaInfoSession:
+        def get(self, _url, timeout):
+            assert timeout == (3.0, 20.0)
+            return FakeResponse([{"id": 101, "mediaInfo": None}])
+
+    assert get_episode_files(
+        NullMediaInfoSession(),
+        42,
+        "https://sonarr.example.org/api/v3",
+        (3.0, 20.0),
+    ) == {101: {"id": 101, "mediaInfo": {}}}
+
+
+def test_get_episode_files_rejects_non_hashable_id():
+    class InvalidEpisodeFileSession:
+        def get(self, _url, timeout):
+            assert timeout == (3.0, 20.0)
+            return FakeResponse([{"id": [101], "mediaInfo": {}}])
+
+    with pytest.raises(ValueError, match="id must be a scalar value"):
+        get_episode_files(
+            InvalidEpisodeFileSession(),
+            42,
             "https://sonarr.example.org/api/v3",
             (3.0, 20.0),
         )
