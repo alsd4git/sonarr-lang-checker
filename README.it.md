@@ -24,7 +24,7 @@ Controlla se ci sono **discrepanze linguistiche** tra gli episodi nelle stagioni
 ## ⚙️ Requisiti
 
 - [uv](https://github.com/astral-sh/uv) installato (es. `brew install uv` o script ufficiale di installazione)
-- Python 3.8+
+- Python 3.10+
 
 ---
 

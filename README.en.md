@@ -24,7 +24,7 @@ Check for **audio language discrepancies** across episodes within a season, or a
 ## ⚙️ Requirements
 
 - [uv](https://github.com/astral-sh/uv) installed (e.g., `brew install uv` or the official install script)
-- Python 3.8+
+- Python 3.10+
 
 ---
 
