@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from main import EXIT_FATAL, EXIT_OK, EXIT_PARTIAL, main, parse_args
+from main import EXIT_FATAL, EXIT_OK, EXIT_PARTIAL, main, parse_args, validate_output_path
 
 
 @patch("main.fetch_all_series_language_data")
@@ -41,6 +41,31 @@ def test_main_returns_success_for_complete_analysis(
 def test_main_returns_fatal_without_configuration():
     with patch.dict(os.environ, {}, clear=True):
         assert main([]) == EXIT_FATAL
+
+
+def test_validate_output_path_rejects_a_missing_parent(tmp_path):
+    missing_output = tmp_path / "missing" / "report.json"
+
+    with pytest.raises(ValueError, match="non esiste"):
+        validate_output_path(missing_output)
+
+
+def test_main_rejects_missing_output_parent_before_making_requests(tmp_path):
+    missing_output = tmp_path / "missing" / "report.json"
+
+    assert (
+        main(
+            [
+                "--apikey",
+                "secret",
+                "--url",
+                "https://sonarr.example.org",
+                "--output",
+                str(missing_output),
+            ]
+        )
+        == EXIT_FATAL
+    )
 
 
 @pytest.mark.parametrize("value", ["0", "-1", "nan", "inf", "-inf"])

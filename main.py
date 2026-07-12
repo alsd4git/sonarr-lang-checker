@@ -13,6 +13,8 @@ from typing import Callable, Dict, List, Tuple
 
 import requests
 from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from language_flags import LANGUAGE_FLAGS
 
@@ -21,6 +23,9 @@ DEFAULT_CONNECT_TIMEOUT = 3.0
 DEFAULT_READ_TIMEOUT = 20.0
 DEFAULT_WORKERS = 4
 MAX_WORKERS = 16
+DEFAULT_RETRY_COUNT = 3
+DEFAULT_RETRY_BACKOFF_SECONDS = 0.25
+RETRYABLE_STATUS_CODES = (429, 500, 502, 503, 504)
 EXIT_OK = 0
 EXIT_FATAL = 1
 EXIT_PARTIAL = 2
@@ -205,9 +210,34 @@ def write_json_atomic(data, filename):
         temporary_path.unlink(missing_ok=True)
 
 
+def validate_output_path(filename: str) -> Path:
+    """Reject output paths whose parent directory cannot be used safely."""
+    path = Path(filename)
+    if not path.parent.is_dir():
+        raise ValueError(
+            f"la directory di destinazione non esiste o non è una directory: {path.parent}"
+        )
+    return path
+
+
 def build_session(apikey: str) -> requests.Session:
     session = requests.Session()
     session.headers.update({'X-Api-Key': apikey})
+    retry_policy = Retry(
+        total=DEFAULT_RETRY_COUNT,
+        connect=DEFAULT_RETRY_COUNT,
+        read=DEFAULT_RETRY_COUNT,
+        status=DEFAULT_RETRY_COUNT,
+        other=0,
+        allowed_methods=frozenset({"GET"}),
+        status_forcelist=RETRYABLE_STATUS_CODES,
+        backoff_factor=DEFAULT_RETRY_BACKOFF_SECONDS,
+        respect_retry_after_header=True,
+        raise_on_status=False,
+    )
+    adapter = HTTPAdapter(max_retries=retry_policy)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
     return session
 
 
@@ -465,6 +495,12 @@ def main(argv=None) -> int:
     if not args.apikey or not args.url:
         print("❌ Devi specificare sia l'API Key che l'URL base (via CLI o .env)")
         return EXIT_FATAL
+    if args.output:
+        try:
+            validate_output_path(args.output)
+        except ValueError as error:
+            print(f"❌ Percorso di output non valido: {error}", file=sys.stderr)
+            return EXIT_FATAL
 
     # Prepare HTTP session and timeouts
     session = build_session(args.apikey)
@@ -519,7 +555,11 @@ def main(argv=None) -> int:
     )
 
     if args.output:
-        write_json_atomic(json_output, args.output)
+        try:
+            write_json_atomic(json_output, args.output)
+        except OSError as error:
+            print(f"❌ Impossibile salvare l'output: {error}", file=sys.stderr)
+            return EXIT_FATAL
         print(f"💾 Risultati salvati in: {args.output}")
     elif args.json or args.structured_json:
         print(json.dumps(json_output, indent=2, ensure_ascii=False))

@@ -4,12 +4,32 @@ import pytest
 import requests
 
 from main import (
+    DEFAULT_RETRY_BACKOFF_SECONDS,
+    DEFAULT_RETRY_COUNT,
+    RETRYABLE_STATUS_CODES,
+    build_session,
     fetch_all_series_language_data,
     get_episode_files,
     get_episodes,
     get_series,
     positive_worker_count,
 )
+
+
+def test_build_session_retries_transient_get_requests_only():
+    session = build_session("api-key")
+
+    for prefix in ("https://", "http://"):
+        retry_policy = session.adapters[prefix].max_retries
+        assert retry_policy.total == DEFAULT_RETRY_COUNT
+        assert retry_policy.connect == DEFAULT_RETRY_COUNT
+        assert retry_policy.read == DEFAULT_RETRY_COUNT
+        assert retry_policy.status == DEFAULT_RETRY_COUNT
+        assert retry_policy.other == 0
+        assert retry_policy.allowed_methods == frozenset({"GET"})
+        assert retry_policy.status_forcelist == RETRYABLE_STATUS_CODES
+        assert retry_policy.backoff_factor == DEFAULT_RETRY_BACKOFF_SECONDS
+        assert retry_policy.respect_retry_after_header is True
 
 
 class FakeResponse:

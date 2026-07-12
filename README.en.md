@@ -39,16 +39,24 @@ cd sonarr-lang-checker
 
 ## ▶️ Usage
 
+Copy the example configuration and set your own values:
+
 ```bash
-uv run ./main.py --apikey <API_KEY> --url <https://host> [options]
+cp .env.example .env
+# Edit .env, then:
+uv run ./main.py [options]
 ```
+
+`--apikey` and `--url` remain available for one-off automation, but command-line
+arguments can be visible in shell history and process listings. Prefer `.env` or
+environment variables for API keys.
 
 ### 🔑 Available options
 
 | Flag             | Description                                                                  |
 |------------------|------------------------------------------------------------------------------|
-| `--apikey`       | **(required)** Sonarr API key (Settings → General)                          |
-| `--url`          | **(required)** Sonarr v4 base URL (e.g., https://sonarr.example.org)        |
+| `--apikey`       | Sonarr API key (Settings → General); prefer `.env` or environment variables |
+| `--url`          | Sonarr v4 base URL; prefer `.env` or environment variables                  |
 | `--output`       | Save output to a `.json` file                                               |
 | `--json`         | Print output as JSON to stdout                                              |
 | `--structured-json` | Emit `{results, failures, complete}` JSON metadata (stdout or `--output`) |
@@ -65,46 +73,46 @@ uv run ./main.py --apikey <API_KEY> --url <https://host> [options]
 
 ### 💡 Examples
 
-Basic scan:
+Basic scan (after configuring `.env`):
 
 ```bash
-uv run ./main.py --apikey abc123 --url https://sonarr.example.org
+uv run ./main.py
 ```
 
 JSON output:
 
 ```bash
-uv run ./main.py --apikey abc123 --url https://sonarr.example.org --json
+uv run ./main.py --json
 ```
 
 Save output to file:
 
 ```bash
-uv run ./main.py --apikey abc123 --url https://sonarr.example.org --output risultati.json
+uv run ./main.py --output results.json
 ```
 
 Include partial-analysis metadata without changing the legacy JSON shape:
 
 ```bash
-uv run ./main.py --apikey abc123 --url https://sonarr.example.org --structured-json --output report.json
+uv run ./main.py --structured-json --output report.json
 ```
 
 Wanted languages (list missing/partial seasons):
 
 ```bash
-uv run ./main.py --apikey abc123 --url https://sonarr.example.org --wanted-langs ita,eng
+uv run ./main.py --wanted-langs ita,eng
 ```
 
 Show also fully supported seasons (100% episodes match wanted):
 
 ```bash
-uv run ./main.py --apikey abc123 --url https://sonarr.example.org --wanted-langs ita --show-all
+uv run ./main.py --wanted-langs ita --show-all
 ```
 
 On resource-constrained Sonarr installations, reduce concurrency:
 
 ```bash
-uv run ./main.py --apikey abc123 --url https://sonarr.example.org --workers 2
+uv run ./main.py --workers 2
 ```
 
 If one or more series cannot be fetched, available results are still produced, an
@@ -117,14 +125,14 @@ error summary is written to stderr, and the process exits with code `2`.
 For convenience:
 
 ```bash
-./run.sh --apikey abc123 --url https://sonarr.example.org --output out.json
+./run.sh --output out.json
 ```
 
 ---
 
 ## 🌍 .env configuration
 
-You can define the API key and URL in a `.env` file:
+Copy `.env.example` to `.env`, then set the API key and URL:
 
 ```
 API_KEY=abc123
@@ -142,7 +150,8 @@ sonarr-lang-checker/
 ├── run.sh             # Convenience wrapper
 ├── .env.example       # Example env vars
 ├── language_flags.py  # Map language codes → emoji
-└── README.md
+├── README.en.md       # English documentation
+└── README.it.md       # Italian documentation
 ```
 
 ---
