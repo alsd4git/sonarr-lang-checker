@@ -1,7 +1,10 @@
 import json
+import os
 import stat
 from pathlib import Path
 from unittest.mock import patch
+
+import pytest
 
 from main import write_json_atomic
 
@@ -22,6 +25,7 @@ def test_write_json_atomic_replaces_existing_file_without_leaving_temporary_file
     assert list(tmp_path.glob(".report.json.*.tmp")) == []
 
 
+@pytest.mark.skipif(os.name == "nt", reason="Windows does not preserve POSIX mode bits")
 def test_write_json_atomic_preserves_existing_file_mode(tmp_path):
     output = tmp_path / "private-report.json"
     output.write_text('{"stale": true}\n', encoding="utf-8")

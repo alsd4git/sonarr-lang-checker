@@ -199,7 +199,10 @@ def write_json_atomic(data, filename):
     try:
         with os.fdopen(file_descriptor, "w", encoding="utf-8") as output_file:
             if existing_mode is not None:
-                os.fchmod(output_file.fileno(), existing_mode)
+                if hasattr(os, "fchmod"):
+                    os.fchmod(output_file.fileno(), existing_mode)
+                else:
+                    os.chmod(temporary_path, existing_mode)
             json.dump(data, output_file, indent=2, ensure_ascii=False)
             output_file.write("\n")
             output_file.flush()
