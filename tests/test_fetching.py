@@ -51,9 +51,7 @@ class FakeSession:
         if "/episode?" in url:
             return FakeResponse([{"seasonNumber": 1, "episodeFileId": 101}])
         if "/episodefile?" in url:
-            return FakeResponse(
-                [{"id": 101, "mediaInfo": {"audioLanguages": "ita"}}]
-            )
+            return FakeResponse([{"id": 101, "mediaInfo": {"audioLanguages": "ita"}}])
         raise AssertionError(f"Unexpected URL: {url}")
 
     def close(self):
@@ -94,9 +92,7 @@ def test_same_title_series_are_kept_and_deterministic():
                 return FakeResponse([{"seasonNumber": 1, "episodeFileId": series_id}])
             if "/episodefile?" in url:
                 series_id = 2 if "seriesId=2" in url else 1
-                return FakeResponse(
-                    [{"id": series_id, "mediaInfo": {"audioLanguages": "ita"}}]
-                )
+                return FakeResponse([{"id": series_id, "mediaInfo": {"audioLanguages": "ita"}}])
             raise AssertionError(f"Unexpected URL: {url}")
 
     data, failures = fetch_all_series_language_data(

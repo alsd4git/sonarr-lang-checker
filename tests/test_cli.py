@@ -10,9 +10,7 @@ from main import EXIT_FATAL, EXIT_OK, EXIT_PARTIAL, main, parse_args, validate_o
 @patch("main.fetch_all_series_language_data")
 @patch("main.get_series")
 @patch("main.build_session")
-def test_main_returns_partial_exit_code_and_summary(
-    build_session, get_series, fetch_all, capsys
-):
+def test_main_returns_partial_exit_code_and_summary(build_session, get_series, fetch_all, capsys):
     build_session.return_value = Mock()
     get_series.return_value = [
         {"id": 1, "title": "OK"},
@@ -31,9 +29,7 @@ def test_main_returns_partial_exit_code_and_summary(
 @patch("main.fetch_all_series_language_data", return_value=({}, []))
 @patch("main.get_series", return_value=[])
 @patch("main.build_session")
-def test_main_returns_success_for_complete_analysis(
-    build_session, _get_series, _fetch_all
-):
+def test_main_returns_success_for_complete_analysis(build_session, _get_series, _fetch_all):
     build_session.return_value = Mock()
     assert main(["--apikey", "secret", "--url", "https://sonarr", "--json"]) == EXIT_OK
 
@@ -79,9 +75,7 @@ def test_timeout_must_be_positive_and_finite(value):
 @patch("main.fetch_all_series_language_data")
 @patch("main.get_series")
 @patch("main.build_session")
-def test_structured_output_includes_partial_metadata(
-    build_session, get_series, fetch_all, tmp_path
-):
+def test_structured_output_includes_partial_metadata(build_session, get_series, fetch_all, tmp_path):
     build_session.return_value = Mock()
     get_series.return_value = [
         {"id": 1, "title": "OK"},
@@ -117,9 +111,7 @@ def test_structured_output_includes_partial_metadata(
 @patch("main.fetch_all_series_language_data", return_value=({}, []))
 @patch("main.get_series", return_value=[])
 @patch("main.build_session")
-def test_legacy_output_file_keeps_results_list_shape(
-    build_session, _get_series, _fetch_all, tmp_path
-):
+def test_legacy_output_file_keeps_results_list_shape(build_session, _get_series, _fetch_all, tmp_path):
     build_session.return_value = Mock()
     output = tmp_path / "results.json"
 

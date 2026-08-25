@@ -35,12 +35,11 @@ dotenv_path = Path(__file__).resolve().parent / ".env"
 if dotenv_path.exists():
     load_dotenv(dotenv_path)
 
+
 def positive_worker_count(value: str) -> int:
     workers = int(value)
     if not 1 <= workers <= MAX_WORKERS:
-        raise argparse.ArgumentTypeError(
-            f"deve essere compreso tra 1 e {MAX_WORKERS}"
-        )
+        raise argparse.ArgumentTypeError(f"deve essere compreso tra 1 e {MAX_WORKERS}")
     return workers
 
 
@@ -55,62 +54,62 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description="Controlla le discrepanze linguistiche nelle stagioni/serie presenti in Sonarr (compatibile solo con Sonarr v4)."
     )
-    parser.add_argument('--apikey', default=getenv("API_KEY"), help='API key di Sonarr (può anche essere in .env)')
-    parser.add_argument('--url', default=getenv("SONARR_URL"), help='URL base di Sonarr (può anche essere in .env)')
-    parser.add_argument('--output', help='Percorso file su cui salvare l’output')
-    parser.add_argument('--json', action='store_true', help='Mostra output in formato JSON')
+    parser.add_argument("--apikey", default=getenv("API_KEY"), help="API key di Sonarr (può anche essere in .env)")
+    parser.add_argument("--url", default=getenv("SONARR_URL"), help="URL base di Sonarr (può anche essere in .env)")
+    parser.add_argument("--output", help="Percorso file su cui salvare l’output")
+    parser.add_argument("--json", action="store_true", help="Mostra output in formato JSON")
     parser.add_argument(
-        '--structured-json',
-        action='store_true',
-        help='Include results, failures e complete nell’output JSON',
+        "--structured-json",
+        action="store_true",
+        help="Include results, failures e complete nell’output JSON",
     )
-    parser.add_argument('--show-all', action='store_true', help='Mostra anche stagioni monolingua')
-    parser.add_argument('--ignore-unknown', action='store_true', help='Ignora "und/unknown" nel calcolo dei mismatch')
+    parser.add_argument("--show-all", action="store_true", help="Mostra anche stagioni monolingua")
+    parser.add_argument("--ignore-unknown", action="store_true", help='Ignora "und/unknown" nel calcolo dei mismatch')
     parser.add_argument(
-        '--timeout',
+        "--timeout",
         type=positive_timeout,
-        help='Timeout HTTP positivo in secondi (solo lettura). Connessione fissa a 3s',
+        help="Timeout HTTP positivo in secondi (solo lettura). Connessione fissa a 3s",
     )
-    parser.add_argument('--wanted-langs', dest='wanted_langs', help='Lista di lingue desiderate separate da virgola (es: ita,eng)')
-    parser.add_argument('--wanted-lang', dest='wanted_langs', help='Alias di --wanted-langs')
-    parser.add_argument('--ignore-anime', action='store_true', help='Ignora le serie con tipo "Anime"')
     parser.add_argument(
-        '--workers',
+        "--wanted-langs", dest="wanted_langs", help="Lista di lingue desiderate separate da virgola (es: ita,eng)"
+    )
+    parser.add_argument("--wanted-lang", dest="wanted_langs", help="Alias di --wanted-langs")
+    parser.add_argument("--ignore-anime", action="store_true", help='Ignora le serie con tipo "Anime"')
+    parser.add_argument(
+        "--workers",
         type=positive_worker_count,
         default=DEFAULT_WORKERS,
-        help=f'Richieste concorrenti massime verso Sonarr (default: {DEFAULT_WORKERS}, max: {MAX_WORKERS})',
+        help=f"Richieste concorrenti massime verso Sonarr (default: {DEFAULT_WORKERS}, max: {MAX_WORKERS})",
     )
     return parser.parse_args(argv)
 
 
 def normalize_url(base_url: str) -> str:
-    base_url = base_url.rstrip('/')
+    base_url = base_url.rstrip("/")
     if not base_url.endswith("/api/v3"):
         base_url += "/api/v3"
     return base_url
 
 
 def get_series(session: requests.Session, base_url: str, timeout: Tuple[float, float]):
-    res = session.get(f'{base_url}/series', timeout=timeout)
+    res = session.get(f"{base_url}/series", timeout=timeout)
     res.raise_for_status()
     payload = res.json()
     if not isinstance(payload, list) or not all(isinstance(item, dict) for item in payload):
         raise ValueError("Sonarr /series returned an invalid payload")
     return payload
 
+
 def get_episodes(session: requests.Session, series_id: int, base_url: str, timeout: Tuple[float, float]):
-    res = session.get(f'{base_url}/episode?seriesId={series_id}', timeout=timeout)
+    res = session.get(f"{base_url}/episode?seriesId={series_id}", timeout=timeout)
     res.raise_for_status()
     episodes = res.json()
     if not isinstance(episodes, list):
-        raise ValueError(
-            f"Sonarr /episode returned an invalid payload for series {series_id}: expected a list"
-        )
+        raise ValueError(f"Sonarr /episode returned an invalid payload for series {series_id}: expected a list")
     for index, episode in enumerate(episodes):
         if not isinstance(episode, dict):
             raise ValueError(
-                f"Sonarr /episode returned an invalid item for series {series_id} "
-                f"at index {index}: expected an object"
+                f"Sonarr /episode returned an invalid item for series {series_id} at index {index}: expected an object"
             )
         # Episodes without a downloaded file may legitimately omit
         # episodeFileId; analyze_language_distribution already skips them.
@@ -118,8 +117,7 @@ def get_episodes(session: requests.Session, series_id: int, base_url: str, timeo
         if missing:
             fields = ", ".join(sorted(missing))
             raise ValueError(
-                f"Sonarr /episode returned an invalid item for series {series_id} "
-                f"at index {index}: missing {fields}"
+                f"Sonarr /episode returned an invalid item for series {series_id} at index {index}: missing {fields}"
             )
         episode_file_id = episode.get("episodeFileId")
         try:
@@ -131,14 +129,13 @@ def get_episodes(session: requests.Session, series_id: int, base_url: str, timeo
             ) from error
     return episodes
 
+
 def get_episode_files(session: requests.Session, series_id: int, base_url: str, timeout: Tuple[float, float]):
-    res = session.get(f'{base_url}/episodefile?seriesId={series_id}', timeout=timeout)
+    res = session.get(f"{base_url}/episodefile?seriesId={series_id}", timeout=timeout)
     res.raise_for_status()
     files = res.json()
     if not isinstance(files, list):
-        raise ValueError(
-            f"Sonarr /episodefile returned an invalid payload for series {series_id}: expected a list"
-        )
+        raise ValueError(f"Sonarr /episodefile returned an invalid payload for series {series_id}: expected a list")
     normalized_files = []
     for index, episode_file in enumerate(files):
         if not isinstance(episode_file, dict):
@@ -148,8 +145,7 @@ def get_episode_files(session: requests.Session, series_id: int, base_url: str, 
             )
         if "id" not in episode_file:
             raise ValueError(
-                f"Sonarr /episodefile returned an invalid item for series {series_id} "
-                f"at index {index}: missing id"
+                f"Sonarr /episodefile returned an invalid item for series {series_id} at index {index}: missing id"
             )
         try:
             hash(episode_file["id"])
@@ -217,15 +213,13 @@ def validate_output_path(filename: str) -> Path:
     """Reject output paths whose parent directory cannot be used safely."""
     path = Path(filename)
     if not path.parent.is_dir():
-        raise ValueError(
-            f"la directory di destinazione non esiste o non è una directory: {path.parent}"
-        )
+        raise ValueError(f"la directory di destinazione non esiste o non è una directory: {path.parent}")
     return path
 
 
 def build_session(apikey: str) -> requests.Session:
     session = requests.Session()
-    session.headers.update({'X-Api-Key': apikey})
+    session.headers.update({"X-Api-Key": apikey})
     retry_policy = Retry(
         total=DEFAULT_RETRY_COUNT,
         connect=DEFAULT_RETRY_COUNT,
@@ -245,8 +239,9 @@ def build_session(apikey: str) -> requests.Session:
 
 
 def get_flag(lang_code: str) -> str:
-    parts = lang_code.lower().split('/')
-    return ' '.join(LANGUAGE_FLAGS.get(code, '🏳️') for code in parts)
+    parts = lang_code.lower().split("/")
+    return " ".join(LANGUAGE_FLAGS.get(code, "🏳️") for code in parts)
+
 
 def normalize_audio_languages(value: str) -> str:
     """
@@ -259,21 +254,37 @@ def normalize_audio_languages(value: str) -> str:
     if not value:
         return "und"
     # Lowercase and split on '/'; trim spaces; drop empties; deduplicate while sorting
-    tokens: List[str] = [t.strip() for t in str(value).lower().split('/') if t.strip()]
+    tokens: List[str] = [t.strip() for t in str(value).lower().split("/") if t.strip()]
     if not tokens:
         return "und"
     # Map common synonyms/aliases
     alias = {
-        'en': 'eng', 'english': 'eng',
-        'it': 'ita', 'italian': 'ita',
-        'ja': 'jpn', 'jp': 'jpn', 'japanese': 'jpn',
-        'fr': 'fra', 'fre': 'fra', 'french': 'fra',
-        'de': 'deu', 'ger': 'deu', 'german': 'deu',
-        'pt': 'por', 'portuguese': 'por',
-        'ru': 'rus', 'russian': 'rus',
-        'zh': 'zho', 'chi': 'zho', 'chinese': 'zho',
-        'es': 'spa', 'spanish': 'spa',
-        'unknown': 'und', 'undetermined': 'und', 'unk': 'und', 'und': 'und',
+        "en": "eng",
+        "english": "eng",
+        "it": "ita",
+        "italian": "ita",
+        "ja": "jpn",
+        "jp": "jpn",
+        "japanese": "jpn",
+        "fr": "fra",
+        "fre": "fra",
+        "french": "fra",
+        "de": "deu",
+        "ger": "deu",
+        "german": "deu",
+        "pt": "por",
+        "portuguese": "por",
+        "ru": "rus",
+        "russian": "rus",
+        "zh": "zho",
+        "chi": "zho",
+        "chinese": "zho",
+        "es": "spa",
+        "spanish": "spa",
+        "unknown": "und",
+        "undetermined": "und",
+        "unk": "und",
+        "und": "und",
     }
     mapped = [alias.get(t, t) for t in tokens]
     # Remove duplicates, then sort for order-insensitivity
@@ -285,10 +296,10 @@ def parse_wanted_langs(csv: str) -> List[str]:
     if not csv:
         return []
     items = []
-    for part in csv.split(','):
+    for part in csv.split(","):
         token = normalize_audio_languages(part)
         # normalize_audio_languages may return combined values if input had '/'
-        items.extend([t for t in token.split('/') if t])
+        items.extend([t for t in token.split("/") if t])
     # deduplicate while preserving order
     seen = set()
     result = []
@@ -375,16 +386,10 @@ def fetch_all_series_language_data(
     title_counts = defaultdict(int)
     for _, title, _, _, _ in fetched:
         title_counts[title.casefold()] += 1
-    for _, title, series_id, year, seasons in sorted(
-        fetched, key=lambda item: (item[0], item[1], item[2])
-    ):
+    for _, title, series_id, year, seasons in sorted(fetched, key=lambda item: (item[0], item[1], item[2])):
         display_title = title
         if title_counts[title.casefold()] > 1:
-            qualifier = (
-                f"{year}, ID {series_id}"
-                if year not in (None, "")
-                else f"ID {series_id}"
-            )
+            qualifier = f"{year}, ID {series_id}" if year not in (None, "") else f"ID {series_id}"
             display_title = f"{title} ({qualifier})"
         all_lang_data[display_title] = seasons
     failures.sort(key=lambda item: (item["serie"].casefold(), item["serie"]))
@@ -403,44 +408,50 @@ def detect_wanted_coverage(lang_summary, wanted: List[str], include_all=False, i
             langs = seasons[season_num]
             # Optionally drop unknowns from consideration
             if ignore_unknown:
-                langs = {k: v for k, v in langs.items() if k != 'und'}
+                langs = {k: v for k, v in langs.items() if k != "und"}
             total = sum(langs.values())
             supported = 0
             for combo, count in langs.items():
-                tokens = combo.split('/')
+                tokens = combo.split("/")
                 if any(t in wanted_set for t in tokens):
                     supported += count
             if total == 0:
                 # nothing to evaluate after ignoring unknowns
                 continue
             if supported == 0:
-                issues.append({
-                    "type": "stagione_non_supportata",
-                    "serie": serie,
-                    "stagione": season_num,
-                    "totale": total,
-                    "supportati": supported,
-                    "lingue_desiderate": wanted_sorted
-                })
-            elif supported == total:
-                if include_all:
-                    issues.append({
-                        "type": "stagione_supportata",
+                issues.append(
+                    {
+                        "type": "stagione_non_supportata",
                         "serie": serie,
                         "stagione": season_num,
                         "totale": total,
                         "supportati": supported,
-                        "lingue_desiderate": wanted_sorted
-                    })
+                        "lingue_desiderate": wanted_sorted,
+                    }
+                )
+            elif supported == total:
+                if include_all:
+                    issues.append(
+                        {
+                            "type": "stagione_supportata",
+                            "serie": serie,
+                            "stagione": season_num,
+                            "totale": total,
+                            "supportati": supported,
+                            "lingue_desiderate": wanted_sorted,
+                        }
+                    )
             else:
-                issues.append({
-                    "type": "stagione_parzialmente_supportata",
-                    "serie": serie,
-                    "stagione": season_num,
-                    "totale": total,
-                    "supportati": supported,
-                    "lingue_desiderate": wanted_sorted
-                })
+                issues.append(
+                    {
+                        "type": "stagione_parzialmente_supportata",
+                        "serie": serie,
+                        "stagione": season_num,
+                        "totale": total,
+                        "supportati": supported,
+                        "lingue_desiderate": wanted_sorted,
+                    }
+                )
     return issues
 
 
@@ -453,43 +464,29 @@ def detect_mismatches(lang_summary, include_all=False, ignore_unknown=False):
             langs = seasons[season_num]
             sorted_langs = dict(sorted(langs.items()))
             if ignore_unknown:
-                known_langs = {k: v for k, v in langs.items() if k != 'und'}
+                known_langs = {k: v for k, v in langs.items() if k != "und"}
                 mixed = len(known_langs) > 1
             else:
                 mixed = len(langs) > 1
             if mixed:
-                issues.append({
-                    "type": "stagione_mista",
-                    "serie": serie,
-                    "stagione": season_num,
-                    "lingue": sorted_langs
-                })
+                issues.append(
+                    {"type": "stagione_mista", "serie": serie, "stagione": season_num, "lingue": sorted_langs}
+                )
             elif include_all:
                 lang = next(iter(sorted_langs))
-                issues.append({
-                    "type": "stagione_ok",
-                    "serie": serie,
-                    "stagione": season_num,
-                    "lingue": {lang: langs[lang]}
-                })
+                issues.append(
+                    {"type": "stagione_ok", "serie": serie, "stagione": season_num, "lingue": {lang: langs[lang]}}
+                )
             if ignore_unknown:
-                series_langs.update({k for k in langs.keys() if k != 'und'})
+                series_langs.update({k for k in langs.keys() if k != "und"})
             else:
                 series_langs.update(langs.keys())
 
         if len(series_langs) > 1:
-            issues.append({
-                "type": "serie_mista",
-                "serie": serie,
-                "lingue": sorted(series_langs)
-            })
+            issues.append({"type": "serie_mista", "serie": serie, "lingue": sorted(series_langs)})
         else:
             if include_all:
-                issues.append({
-                    "type": "serie_ok",
-                    "serie": serie,
-                    "lingue": sorted(series_langs)
-                })
+                issues.append({"type": "serie_ok", "serie": serie, "lingue": sorted(series_langs)})
     return issues
 
 
@@ -526,10 +523,7 @@ def main(argv=None) -> int:
     selected_series = [
         serie
         for serie in series_list
-        if not (
-            args.ignore_anime
-            and str(serie.get('seriesType', '')).lower() == 'anime'
-        )
+        if not (args.ignore_anime and str(serie.get("seriesType", "")).lower() == "anime")
     ]
     all_lang_data, failures = fetch_all_series_language_data(
         selected_series,
@@ -540,21 +534,20 @@ def main(argv=None) -> int:
     )
     for failure in failures:
         print(
-            f"⚠️ Errore durante l'elaborazione della serie "
-            f"'{failure['serie']}': {failure['errore']}",
+            f"⚠️ Errore durante l'elaborazione della serie '{failure['serie']}': {failure['errore']}",
             file=sys.stderr,
         )
 
     wanted_list = parse_wanted_langs(args.wanted_langs) if args.wanted_langs else []
     if wanted_list:
-        results = detect_wanted_coverage(all_lang_data, wanted_list, include_all=args.show_all, ignore_unknown=args.ignore_unknown)
+        results = detect_wanted_coverage(
+            all_lang_data, wanted_list, include_all=args.show_all, ignore_unknown=args.ignore_unknown
+        )
     else:
         results = detect_mismatches(all_lang_data, include_all=args.show_all, ignore_unknown=args.ignore_unknown)
 
     json_output = (
-        {"results": results, "failures": failures, "complete": not failures}
-        if args.structured_json
-        else results
+        {"results": results, "failures": failures, "complete": not failures} if args.structured_json else results
     )
 
     if args.output:
@@ -571,9 +564,9 @@ def main(argv=None) -> int:
         if results:
             last_serie = None
             for item in results:
-                if last_serie and item['serie'] != last_serie:
+                if last_serie and item["serie"] != last_serie:
                     print()
-                last_serie = item['serie']
+                last_serie = item["serie"]
 
                 label = None
                 pad = 24
@@ -592,15 +585,19 @@ def main(argv=None) -> int:
                     label = "✅ SERIE OK"
                     pad = PADDING_WIDTH - 2
                 if item["type"] in ("stagione_mista", "stagione_ok"):
-                    lang_display = {f"{get_flag(k)} {k}": v for k, v in item['lingue'].items()}
+                    lang_display = {f"{get_flag(k)} {k}": v for k, v in item["lingue"].items()}
                     print(f"  [{label}]".ljust(pad) + f" {item['serie']} - Stagione {item['stagione']}: {lang_display}")
                 elif item["type"] == "serie_mista":
-                    langs = ', '.join(f"{get_flag(k)} {k}" for k in item['lingue'])
+                    langs = ", ".join(f"{get_flag(k)} {k}" for k in item["lingue"])
                     print(f"  [{label}]".ljust(pad) + f" {item['serie']}: Lingue usate: [{langs}]")
                 elif item["type"] == "serie_ok":
-                    langs = ', '.join(f"{get_flag(k)} {k}" for k in item['lingue'])
+                    langs = ", ".join(f"{get_flag(k)} {k}" for k in item["lingue"])
                     print(f"  [{label}]".ljust(pad) + f" {item['serie']}: Lingua unica: [{langs}]")
-                elif item["type"] in ("stagione_non_supportata", "stagione_parzialmente_supportata", "stagione_supportata"):
+                elif item["type"] in (
+                    "stagione_non_supportata",
+                    "stagione_parzialmente_supportata",
+                    "stagione_supportata",
+                ):
                     if item["type"] == "stagione_non_supportata":
                         label = "🚫 NESSUNA LINGUA DESIDERATA"
                         pad = PADDING_WIDTH - 1
@@ -610,7 +607,7 @@ def main(argv=None) -> int:
                     elif item["type"] == "stagione_supportata":
                         label = "✅ STAGIONE OK (desiderata)"
                         pad = PADDING_WIDTH - 2
-                    wanted_disp = ', '.join(f"{get_flag(k)} {k}" for k in item['lingue_desiderate'])
+                    wanted_disp = ", ".join(f"{get_flag(k)} {k}" for k in item["lingue_desiderate"])
                     print(
                         f"  [{label}]".ljust(pad)
                         + f" {item['serie']} - Stagione {item['stagione']}: "
