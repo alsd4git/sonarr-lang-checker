@@ -2,6 +2,9 @@
 
 English · [Italiano](README.it.md)
 
+[![CI](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml/badge.svg)](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+
 Find inconsistent audio-language coverage in a Sonarr v4 library. The script reports mixed-language seasons, compares seasons within a series, and checks whether episodes contain a requested set of languages.
 
 Sonarr v4 is required. Earlier versions are not supported.

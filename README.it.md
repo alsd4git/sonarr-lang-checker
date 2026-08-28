@@ -2,6 +2,9 @@
 
 [English](README.en.md) · Italiano
 
+[![CI](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml/badge.svg)](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+
 Individua coperture audio incoerenti in una libreria Sonarr v4. Lo script segnala stagioni con lingue miste, confronta le stagioni di una serie e verifica se gli episodi contengono un insieme di lingue desiderate.
 
 È richiesto Sonarr v4. Le versioni precedenti non sono supportate.
