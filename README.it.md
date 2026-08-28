@@ -1,181 +1,96 @@
-# 🎬 sonarr-lang-checker
+# sonarr-lang-checker
 
-Italiano · [English](README.en.md)
+[English](README.en.md) · Italiano
 
-Controlla se ci sono **discrepanze linguistiche** tra gli episodi nelle stagioni o tra stagioni di una serie TV, usando l'API di [Sonarr v4](https://sonarr.tv).
+Individua coperture audio incoerenti in una libreria Sonarr v4. Lo script segnala stagioni con lingue miste, confronta le stagioni di una serie e verifica se gli episodi contengono un insieme di lingue desiderate.
 
----
+È richiesto Sonarr v4. Le versioni precedenti non sono supportate.
 
-## 🚀 Caratteristiche
+## Requisiti
 
-- 🔍 Analizza tutte le serie e stagioni presenti in Sonarr (v4)
-- 🎧 Rileva episodi o stagioni con lingue miste (es. metà in italiano, metà in inglese)
-- 📦 Output in formato testuale o JSON
-- 🧰 Compatibile con `uv` per gestione ambienti veloce e isolata
-- 🧩 Normalizza le lingue audio: ordine indipendente e sinonimi comuni unificati (es. `en→eng`, `fra/fre→fra`, `unknown/undetermined→und`)
-- 🎯 Copertura lingue desiderate: segnala stagioni senza o con supporto parziale delle lingue preferite
-- ⚡ Recupero concorrente con un limite configurabile per non sovraccaricare Sonarr
-- 🧭 Exit code espliciti: `0` analisi completa, `1` errore fatale, `2` risultati parziali
+- Python 3.10 o successivo
+- [uv](https://docs.astral.sh/uv/)
+- URL e API key di Sonarr v4
 
-> ❗ Compatibile solo con **Sonarr v4** (`/api/v3`). Non supporta Sonarr v3 o inferiore.
-
----
-
-## ⚙️ Requisiti
-
-- [uv](https://github.com/astral-sh/uv) installato (es. `brew install uv` o script ufficiale di installazione)
-- Python 3.10+
-
----
-
-## 📦 Setup
-
-### Clona il progetto
+## Configurazione
 
 ```bash
 git clone https://github.com/alsd4git/sonarr-lang-checker.git
 cd sonarr-lang-checker
-```
-
-## ▶️ Utilizzo
-
-Copia la configurazione di esempio e inserisci i tuoi valori:
-
-```bash
 cp .env.example .env
-# Modifica .env, poi:
-uv run ./main.py [opzioni]
+uv sync --locked
 ```
 
-`--apikey` e `--url` rimangono disponibili per automazioni puntuali, ma gli
-argomenti della riga di comando possono finire nella history della shell o nella
-lista dei processi. Per le API key preferisci `.env` o variabili d'ambiente.
+Imposta questi valori in `.env`:
 
-### 🔑 Opzioni disponibili
-
-| Flag             | Descrizione                                                                 |
-|------------------|------------------------------------------------------------------------------|
-| `--apikey`       | API key di Sonarr (Settings → General); preferisci `.env` o variabili d'ambiente |
-| `--url`          | URL base Sonarr v4; preferisci `.env` o variabili d'ambiente                |
-| `--output`       | Salva l’output su un file `.json`                                           |
-| `--json`         | Mostra l’output direttamente in formato JSON su stdout                      |
-| `--structured-json` | Include i metadata `{results, failures, complete}` su stdout o `--output` |
-| `--show-all`     | Mostra anche stagioni monolingua, non solo quelle con lingue miste          |
-| `--ignore-unknown` | Ignora `und` (unknown/undetermined) nel calcolo stagione/serie mista e in wanted |
-| `--timeout`      | Timeout HTTP di lettura in secondi (connessione fissa a 3s)                 |
-| `--wanted-langs` | Lingue desiderate separate da virgola (es: `ita,eng`)                       |
-| `--wanted-lang`  | Alias di `--wanted-langs`                                                   |
-| `--ignore-anime` | Ignora le serie con tipo "Anime"                                           |
-| `--workers`      | Richieste concorrenti massime verso Sonarr (default `4`, massimo `16`)      |
-| `-h, --help`     | Mostra l’aiuto e tutti i parametri disponibili                              |
-
----
-
-### 💡 Esempi
-
-Analisi base (dopo avere configurato `.env`):
-
-```bash
-uv run ./main.py
-```
-
-Output formattato in JSON:
-
-```bash
-uv run ./main.py --json
-```
-
-Output salvato su file:
-
-```bash
-uv run ./main.py --output risultati.json
-```
-
-Per includere i metadata delle analisi parziali senza cambiare il vecchio formato JSON:
-
-```bash
-uv run ./main.py --structured-json --output report.json
-```
-
-Lingue desiderate (lista stagioni assenti/parziali):
-
-```bash
-uv run ./main.py --wanted-langs ita,eng
-```
-
-Mostra anche stagioni completamente supportate (100% episodi):
-
-```bash
-uv run ./main.py --wanted-langs ita --show-all
-```
-
-Su installazioni Sonarr con risorse limitate puoi ridurre il parallelismo:
-
-```bash
-uv run ./main.py --workers 2
-```
-
-Se una o più serie non possono essere recuperate, i risultati disponibili vengono
-comunque prodotti, il riepilogo degli errori viene scritto su stderr e il processo
-termina con exit code `2`.
-
----
-
-## 🧪 Wrapper opzionale: `run.sh`
-
-Per semplificare l’uso:
-
-```bash
-./run.sh --output out.json
-```
-
----
-
-## 🌍 Configurazione .env
-
-Copia `.env.example` in `.env`, quindi imposta API key e URL:
-
-```
-API_KEY=abc123
+```dotenv
+API_KEY=inserisci-la-tua-api-key
 SONARR_URL=https://sonarr.example.org
 ```
 
-Lo script caricherà questi valori automaticamente se non specificati da CLI.
+Mantieni privato il file `.env`. Una API key passata come argomento può essere salvata nella cronologia della shell o comparire nella lista dei processi.
 
-## 🧱 Struttura del progetto
+## Utilizzo
 
 ```bash
-sonarr-lang-checker/
-├── main.py            # Script principale (solo Sonarr v4)
-├── pyproject.toml     # Definizione dipendenze per uv
-├── run.sh             # Wrapper eseguibile
-├── .env.example       # File di esempio per le variabili d’ambiente
-├── language_flags.py  # Mappatura codici lingua → emoji
-├── README.en.md       # Documentazione inglese
-└── README.it.md       # Documentazione italiana
+# Analisi standard
+uv run python main.py
+
+# Stampa JSON su stdout
+uv run python main.py --json
+
+# Salva risultati strutturati, inclusi i metadati degli errori parziali
+uv run python main.py --structured-json --output report.json
+
+# Segnala la copertura italiana e inglese mancante o parziale
+uv run python main.py --wanted-langs ita,eng
+
+# Include le stagioni che soddisfano tutte le lingue richieste
+uv run python main.py --wanted-langs ita,eng --show-all
+
+# Riduce le richieste concorrenti verso Sonarr
+uv run python main.py --workers 2
 ```
 
----
+Usa `uv run python main.py --help` per l'elenco completo delle opzioni. Sui sistemi POSIX, `./run.sh` è un wrapper più breve.
 
-## 📌 Estensioni future (idee)
+### Opzioni principali
 
-- Supporto `cron` per esecuzione pianificata
-- `Dockerfile` per containerizzazione
-- Web UI o CLI interattiva con ricerca avanzata
-- Notifiche Telegram/email per mismatch rilevati
-- Normalizzazione codici lingua e bandierine
-- Esportazione CSV
-- Supporto `.env` già integrato ✅
+| Opzione | Scopo |
+| --- | --- |
+| `--json` | Stampa su stdout il formato JSON originale. |
+| `--structured-json` | Include i metadati `results`, `failures` e `complete`. |
+| `--output PERCORSO` | Scrive l'output JSON in un file. |
+| `--wanted-langs ELENCO` | Verifica un elenco separato da virgole, per esempio `ita,eng`. |
+| `--show-all` | Include le stagioni monolingua o con copertura completa. |
+| `--ignore-unknown` | Esclude le tracce sconosciute dal confronto delle lingue. |
+| `--ignore-anime` | Ignora le serie con tipo Anime in Sonarr. |
+| `--workers N` | Limita le richieste concorrenti. Il valore predefinito è 4, il massimo è 16. |
+| `--timeout SECONDI` | Imposta il timeout di lettura HTTP. |
 
----
+I codici lingua vengono normalizzati prima del confronto. L'ordine delle tracce non conta, gli alias comuni vengono unificati e le tracce sconosciute usano `und`.
 
-## 🤝 Contribuire
+## Codici di uscita
 
-Pull request e suggerimenti sono benvenuti!
+| Codice | Significato |
+| --- | --- |
+| `0` | L'analisi è stata completata. |
+| `1` | Un errore fatale di configurazione o richiesta ha impedito l'analisi. |
+| `2` | Sono stati prodotti risultati parziali perché non è stato possibile recuperare una o più serie. |
 
----
+Gli errori e il riepilogo dei risultati parziali vengono scritti su stderr, così il JSON su stdout resta leggibile dalle applicazioni.
 
-## 🛡️ Licenza
+## Sviluppo
 
-MIT License - Fai quello che vuoi, ma linka l'autore :)
-© [Alessandro Digilio](https://github.com/alsd4git)
+```bash
+uv sync --locked --dev
+uv run ruff format --check .
+uv run ruff check .
+uv run pytest -q
+```
+
+GitHub Actions esegue questi controlli su Linux, macOS e Windows con la versione Python minima e quella più recente supportate.
+
+## Licenza
+
+Distribuito con licenza [MIT](LICENSE).
