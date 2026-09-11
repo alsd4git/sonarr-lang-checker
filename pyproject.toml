@@ -1,13 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "sonarr-lang-checker"
 version = "0.1.0"
 description = "Controlla le discrepanze linguistiche tra episodi e stagioni in Sonarr"
+readme = "README.md"
 requires-python = ">=3.10"
 
 dependencies = [
     "requests>=2.32,<3",
     "python-dotenv>=1.0,<2"
 ]
+
+[project.scripts]
+sonarr-lang-checker = "main:main"
+
+[tool.uv]
+package = true
+
+[tool.setuptools]
+py-modules = ["main", "language_flags"]
 
 [dependency-groups]
 dev = [
