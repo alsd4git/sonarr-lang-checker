@@ -7,6 +7,10 @@ English · [Italiano](README.it.md)
 
 Find inconsistent audio-language coverage in a Sonarr v4 library. The CLI reports mixed-language seasons, compares seasons within a series, and checks whether episodes contain a requested set of languages.
 
+![Terminal output from the CLI using a synthetic library; no Sonarr server was contacted.](docs/demo-output.svg)
+
+The demo uses synthetic series, episode, and audio-track fixtures with the real analysis and CLI output code. It does not contact Sonarr. Regenerate the image with `uv run python scripts/demo.py`.
+
 Sonarr v4 is required. Earlier versions are not supported.
 
 ## Requirements
