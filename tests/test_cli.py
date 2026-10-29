@@ -34,9 +34,24 @@ def test_main_returns_success_for_complete_analysis(build_session, _get_series, 
     assert main(["--apikey", "secret", "--url", "https://sonarr", "--json"]) == EXIT_OK
 
 
-def test_main_returns_fatal_without_configuration():
+def test_main_returns_fatal_without_configuration(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     with patch.dict(os.environ, {}, clear=True):
         assert main([]) == EXIT_FATAL
+
+
+@patch("main.fetch_all_series_language_data", return_value=({}, []))
+@patch("main.get_series", return_value=[])
+@patch("main.build_session")
+def test_installed_cli_loads_dotenv_from_working_directory(
+    build_session, _get_series, _fetch_all, tmp_path, monkeypatch
+):
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / ".env").write_text("API_KEY=fixture-key\nSONARR_URL=https://sonarr.example.org\n")
+    build_session.return_value = Mock()
+    with patch.dict(os.environ, {}, clear=True):
+        assert main(["--json"]) == EXIT_OK
+    build_session.assert_called_with("fixture-key")
 
 
 def test_validate_output_path_rejects_a_missing_parent(tmp_path):

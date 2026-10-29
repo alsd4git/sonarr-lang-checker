@@ -5,7 +5,7 @@ English · [Italiano](README.it.md)
 [![CI](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml/badge.svg)](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 
-Find inconsistent audio-language coverage in a Sonarr v4 library. The script reports mixed-language seasons, compares seasons within a series, and checks whether episodes contain a requested set of languages.
+Find inconsistent audio-language coverage in a Sonarr v4 library. The CLI reports mixed-language seasons, compares seasons within a series, and checks whether episodes contain a requested set of languages.
 
 Sonarr v4 is required. Earlier versions are not supported.
 
@@ -15,16 +15,29 @@ Sonarr v4 is required. Earlier versions are not supported.
 - [uv](https://docs.astral.sh/uv/)
 - A Sonarr v4 URL and API key
 
-## Setup
+## Installation
+
+Install directly from the default branch on GitHub:
 
 ```bash
-git clone https://github.com/alsd4git/sonarr-lang-checker.git
-cd sonarr-lang-checker
-cp .env.example .env
-uv sync --locked
+uv tool install git+https://github.com/alsd4git/sonarr-lang-checker.git
+sonarr-lang-checker --help
 ```
 
-Set the following values in `.env`:
+For a one-off run without keeping the tool installed:
+
+```bash
+uvx --from git+https://github.com/alsd4git/sonarr-lang-checker.git sonarr-lang-checker --help
+```
+
+No packaged release has been published yet. Once a release exists, append its tag
+to the Git URL, for example `@v0.1.0`, to select that version. The release workflow
+builds wheel and source distributions. Record the version in [CHANGELOG.md](CHANGELOG.md)
+before pushing a matching tag.
+
+## Configuration
+
+Create `.env` in the directory where you run the command:
 
 ```dotenv
 API_KEY=replace-with-your-api-key
@@ -37,25 +50,25 @@ Keep `.env` private. API keys passed as command-line arguments may be recorded i
 
 ```bash
 # Standard scan
-uv run python main.py
+sonarr-lang-checker
 
 # Print JSON to stdout
-uv run python main.py --json
+sonarr-lang-checker --json
 
 # Save structured results, including partial-failure metadata
-uv run python main.py --structured-json --output report.json
+sonarr-lang-checker --structured-json --output report.json
 
 # Report missing or partial Italian and English coverage
-uv run python main.py --wanted-langs ita,eng
+sonarr-lang-checker --wanted-langs ita,eng
 
 # Include seasons that fully match the requested languages
-uv run python main.py --wanted-langs ita,eng --show-all
+sonarr-lang-checker --wanted-langs ita,eng --show-all
 
 # Reduce concurrent Sonarr requests
-uv run python main.py --workers 2
+sonarr-lang-checker --workers 2
 ```
 
-Use `uv run python main.py --help` for the complete option list. `./run.sh` is a shorter wrapper for POSIX systems.
+Use `sonarr-lang-checker --help` for the complete option list.
 
 ### Relevant options
 
@@ -86,13 +99,19 @@ Errors and partial-result summaries are written to stderr so JSON on stdout stay
 ## Development
 
 ```bash
+git clone https://github.com/alsd4git/sonarr-lang-checker.git
+cd sonarr-lang-checker
 uv sync --locked --dev
+uv run sonarr-lang-checker --help
 uv run ruff format --check .
 uv run ruff check .
 uv run pytest -q
+uv build
 ```
 
-GitHub Actions runs these checks on Linux, macOS, and Windows with the oldest and newest supported Python versions.
+`main.py` remains directly executable for compatibility, but the installed `sonarr-lang-checker` entry point is the preferred user-facing interface.
+
+GitHub Actions runs checks on Linux, macOS, and Windows with the oldest and newest supported Python versions.
 
 ## License
 

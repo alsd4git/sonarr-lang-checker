@@ -30,11 +30,6 @@ EXIT_OK = 0
 EXIT_FATAL = 1
 EXIT_PARTIAL = 2
 
-# Carica .env se presente
-dotenv_path = Path(__file__).resolve().parent / ".env"
-if dotenv_path.exists():
-    load_dotenv(dotenv_path)
-
 
 def positive_worker_count(value: str) -> int:
     workers = int(value)
@@ -491,6 +486,7 @@ def detect_mismatches(lang_summary, include_all=False, ignore_unknown=False):
 
 
 def main(argv=None) -> int:
+    load_dotenv(Path.cwd() / ".env")
     args = parse_args(argv)
     if not args.apikey or not args.url:
         print("❌ Devi specificare sia l'API Key che l'URL base (via CLI o .env)")
