@@ -4,9 +4,12 @@
 
 [![CI](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml/badge.svg)](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![Ultima release](https://img.shields.io/github/v/release/alsd4git/sonarr-lang-checker)](https://github.com/alsd4git/sonarr-lang-checker/releases)
 
 Individua coperture audio incoerenti in una libreria Sonarr v4. La CLI segnala stagioni con lingue miste, confronta le stagioni di una serie e verifica se gli episodi contengono un insieme di lingue desiderate.
+
+![Output del terminale con una libreria sintetica; non è stato contattato alcun server Sonarr.](docs/demo-output.svg)
+
+La demo usa serie, episodi e tracce audio di esempio con il codice reale di analisi e di output della CLI. Non contatta Sonarr. Rigenera l'immagine con `uv run python scripts/demo.py`.
 
 È richiesto Sonarr v4. Le versioni precedenti non sono supportate.
 
