@@ -4,6 +4,7 @@
 
 [![CI](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml/badge.svg)](https://github.com/alsd4git/sonarr-lang-checker/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![Ultima release](https://img.shields.io/github/v/release/alsd4git/sonarr-lang-checker)](https://github.com/alsd4git/sonarr-lang-checker/releases)
 
 Individua coperture audio incoerenti in una libreria Sonarr v4. La CLI segnala stagioni con lingue miste, confronta le stagioni di una serie e verifica se gli episodi contengono un insieme di lingue desiderate.
 
