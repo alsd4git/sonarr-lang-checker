@@ -17,20 +17,23 @@ Sonarr v4 is required. Earlier versions are not supported.
 
 ## Installation
 
-Install a tagged version directly from GitHub:
+Install directly from the default branch on GitHub:
 
 ```bash
-uv tool install git+https://github.com/alsd4git/sonarr-lang-checker.git@v0.1.0
+uv tool install git+https://github.com/alsd4git/sonarr-lang-checker.git
 sonarr-lang-checker --help
 ```
 
 For a one-off run without keeping the tool installed:
 
 ```bash
-uvx --from git+https://github.com/alsd4git/sonarr-lang-checker.git@v0.1.0 sonarr-lang-checker --help
+uvx --from git+https://github.com/alsd4git/sonarr-lang-checker.git sonarr-lang-checker --help
 ```
 
-The examples are intentionally pinned to a tag. Tagged GitHub Releases also publish wheel and source distributions, so a release asset can be used as an alternative reproducible installation source.
+No packaged release has been published yet. Once a release exists, append its tag
+to the Git URL, for example `@v0.1.0`, to select that version. The release workflow
+builds wheel and source distributions. Record the version in [CHANGELOG.md](CHANGELOG.md)
+before pushing a matching tag.
 
 ## Configuration
 

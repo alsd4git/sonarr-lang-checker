@@ -11,3 +11,6 @@ __pycache__/
 *.pyo
 *.xlsx
 *repomix*
+build/
+dist/
+*.egg-info/
