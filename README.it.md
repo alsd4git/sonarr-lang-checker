@@ -115,7 +115,9 @@ uv build
 
 `python main.py` resta supportato nelle checkout sorgenti.
 
-GitHub Actions esegue questi controlli su Linux, macOS e Windows con la versione Python minima e quella più recente supportate.
+GitHub Actions esegue i test su Linux, macOS e Windows con Python 3.11–3.15,
+più Python 3.10 su Linux. Formattazione, lint e verifica del pacchetto vengono
+eseguiti una sola volta su Linux con Python 3.15.
 
 ## Licenza
 
