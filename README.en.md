@@ -115,7 +115,9 @@ uv build
 
 `main.py` remains directly executable for compatibility, but the installed `sonarr-lang-checker` entry point is the preferred user-facing interface.
 
-GitHub Actions runs checks on Linux, macOS, and Windows with the oldest and newest supported Python versions.
+GitHub Actions runs tests on Linux, macOS, and Windows with Python 3.10–3.15.
+Formatting, lint, and the package smoke test run once
+on Linux with Python 3.15.
 
 ## License
 

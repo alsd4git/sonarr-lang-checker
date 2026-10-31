@@ -16,15 +16,24 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10", "3.14"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14", "3.15"]
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.0.1
         with:
           python-version: ${{ matrix.python-version }}
       - run: uv sync --locked --dev
-      - run: uv run ruff format --check .
       - run: uv run pytest -q
+
+  quality-and-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          python-version: "3.15"
+      - run: uv sync --locked --dev
+      - run: uv run ruff format --check .
       - run: uv run ruff check .
       - run: uv build
       - name: Smoke-test installed wheel outside the checkout
